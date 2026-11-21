@@ -198,18 +198,3 @@ Los valores esperados están en comentarios del fixture y se calculan a mano, no
 
 ---
 
-## 11. Verificación de aceptación del contrato
-
-- [ ] `pytest` ejecutado sobre el esqueleto de `main` no produce `ImportError`.
-- [ ] Todas las firmas de este documento existen en su archivo correspondiente.
-- [ ] Las constantes de la sección 2 coinciden exactamente con el enunciado.
-- [ ] Los tres integrantes firman el documento (nombre y fecha).
-
-**Firmas:**
-- Integrante 1: ____________________ Fecha: ________
-- Integrante 2: ____________________ Fecha: ________
-- Integrante 3: ____________________ Fecha: ________
-````
-````
-
-Nota: cambié la firma de `snapshot` respecto de lo que propuse antes (ahora recibe nombre, grafo, resultado y corte), porque así guarda todo lo que necesita la tabla de comparación. Los issues de integrante 3 deben actualizarse a esta firma.
