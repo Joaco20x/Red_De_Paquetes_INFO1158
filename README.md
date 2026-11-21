@@ -36,7 +36,7 @@ proyecto/
 
 ---
 
-## 2. Tipos y constantes compartidas (`src/graph.py`)
+## 2. Tipos y constantes compartidas (`src/core.py`)
 
 ````python
 Arc = tuple[str, str]          # arco dirigido (origen, destino)
@@ -54,7 +54,7 @@ Los nombres de vértices son cadenas no vacías. Todos los integrantes usan esta
 
 ---
 
-## 3. Excepción (`src/graph.py`)
+## 3. Excepción (`src/core.py`)
 
 ````python
 class GraphError(ValueError):
