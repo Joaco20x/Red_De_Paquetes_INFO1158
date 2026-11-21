@@ -197,4 +197,3 @@ Los valores esperados están en comentarios del fixture y se calculan a mano, no
 7. **Sin bibliotecas de flujo.** No se usan funciones de flujo ni de corte de `networkx` o similares. Solo se permiten las estructuras básicas de Python, `pytest` y `tkinter`.
 
 ---
-
