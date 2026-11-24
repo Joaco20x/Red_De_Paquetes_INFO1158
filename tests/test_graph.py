@@ -114,3 +114,31 @@ def test_validacion_informa_todos_los_problemas(red):
     assert any("vértices" in m for m in mensajes)
     assert any("arcos" in m for m in mensajes)
     assert any("aislados: C" in m for m in mensajes)
+
+
+def test_un_camino_directo_es_insuficiente(red):
+    assert not red.has_two_distinct_paths("A", "B")
+
+
+def test_no_hay_camino_en_sentido_inverso(red):
+    assert not red.has_two_distinct_paths("B", "A")
+
+
+def test_dos_caminos_sin_intermedios_comunes(red):
+    red.add_arc("A", "C", 1)
+    red.add_arc("C", "B", 1)
+    assert red.has_two_distinct_paths("A", "B")
+
+
+def test_dos_caminos_pueden_compartir_un_tramo(red):
+    red.add_vertex("T")
+    red.add_arc("B", "T", 1)
+    red.add_arc("B", "C", 1)
+    red.add_arc("C", "T", 1)
+    assert red.has_two_distinct_paths("A", "T")
+
+
+@pytest.mark.parametrize(("s", "t"), [("A", "A"), ("X", "B"), ("A", "X")])
+def test_extremos_invalidos_al_buscar_caminos(red, s, t):
+    with pytest.raises(GraphError):
+        red.has_two_distinct_paths(s, t)

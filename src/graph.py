@@ -72,3 +72,31 @@ class Graph:
         if aislados:
             errores.append("Vértices aislados: " + ", ".join(aislados))
         return errores
+
+    def has_two_distinct_paths(self, s: str, t: str) -> bool:
+        """Busca dos caminos simples de s a t. Extremos iguales o ausentes dan GraphError."""
+        for centro in (s, t):
+            if centro not in self.vertices:
+                raise GraphError(f"El vértice {centro!r} no existe.")
+        if s == t:
+            raise GraphError("El origen y el destino deben ser distintos.")
+
+        salidas = {centro: [] for centro in self.vertices}
+        for origen, destino in self.arcs:
+            salidas[origen].append(destino)
+
+        pendientes = [[s]]
+        encontrados = 0
+        while pendientes:
+            camino = pendientes.pop()
+            actual = camino[-1]
+            if actual == t:
+                encontrados += 1
+                if encontrados == 2:
+                    return True
+            else:
+                for vecino in salidas[actual]:
+                    # Solo evitamos repetir centros dentro de este camino.
+                    if vecino not in camino:
+                        pendientes.append(camino + [vecino])
+        return False
