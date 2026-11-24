@@ -53,6 +53,21 @@ def bfs_augmenting_path(residual, s, t) -> list | None :
         t = visitados[t][0]
     recorrido= list(reversed(recorrido))
     return recorrido
+
+def bottleneck(residual , path) -> int:
+    aux = []
+    if path == [] :
+       raise core.GraphError
+    for v in path:
+        if v in residual:
+            aux.append(residual[v])
+        else:
+            raise core.GraphError(f"arco {v} no está en la residual")
+    return min(aux)
+
+
+
+
 residual= {("s","a"): 1, ("a","t"): 1, ("s","b"): 1, ("b","c"): 1, ("c","t"): 1}
 residual2= {("s","a"): 1, ("b","t"): 1}
 residual3= {("s","b"): 1, ("b","a"): 1, ("a","t"): 1}
