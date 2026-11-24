@@ -42,3 +42,10 @@ class Graph:
         if (u, v) not in self.arcs:
             raise GraphError(f"La ruta {u} → {v} no existe.")
         del self.arcs[u, v]
+
+    def set_capacity(self, u: str, v: str, capacity: int) -> None:
+        """Actualiza u → v. Una ruta inexistente o capacidad inválida produce GraphError."""
+        if (u, v) not in self.arcs:
+            raise GraphError(f"La ruta {u} → {v} no existe.")
+        self._validate_capacity(capacity)
+        self.arcs[u, v] = capacity
