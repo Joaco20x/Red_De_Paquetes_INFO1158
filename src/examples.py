@@ -1,0 +1,29 @@
+"""Redes de distribución para comparar escenarios y comprobar resultados."""
+
+from src.graph import Graph
+
+SOURCE = "O"
+SINK = "T"
+
+
+def _build_network(centros, rutas) -> Graph:
+    """Construye una red nueva a partir de centros y ternas (origen, destino, capacidad)."""
+    red = Graph()
+    for centro in centros:
+        red.add_vertex(centro)
+    for origen, destino, capacidad in rutas:
+        red.add_arc(origen, destino, capacidad)
+    return red
+
+
+def build_main_network() -> Graph:
+    """Devuelve la red inicial de diez centros y quince rutas dirigidas."""
+    # Las dos cadenas cubren todos los centros. Las cinco conexiones adicionales
+    # van hacia la siguiente etapa, sin duplicar ni invertir ninguna ruta.
+    rutas = [
+        ("O", "A", 6), ("A", "C", 6), ("C", "E", 6), ("E", "G", 6), ("G", "T", 4),
+        ("O", "B", 5), ("B", "D", 5), ("D", "F", 5), ("F", "H", 5), ("H", "T", 4),
+        ("A", "D", 2), ("B", "C", 2), ("C", "F", 3), ("D", "E", 3), ("E", "H", 2),
+    ]
+    # Flujo máximo esperado: 8. Cada cadena admite 4 y a T solo entran 4 + 4.
+    return _build_network(("O", "A", "B", "C", "D", "E", "F", "G", "H", "T"), rutas)

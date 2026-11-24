@@ -142,3 +142,13 @@ def test_dos_caminos_pueden_compartir_un_tramo(red):
 def test_extremos_invalidos_al_buscar_caminos(red, s, t):
     with pytest.raises(GraphError):
         red.has_two_distinct_paths(s, t)
+
+
+def test_red_principal_cumple_las_reglas_iniciales():
+    from src.examples import build_main_network
+    assert build_main_network().validate_initial() == []
+
+
+def test_red_principal_admite_dos_caminos():
+    from src.examples import SOURCE, SINK, build_main_network
+    assert build_main_network().has_two_distinct_paths(SOURCE, SINK)
