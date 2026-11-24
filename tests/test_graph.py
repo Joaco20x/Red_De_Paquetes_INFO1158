@@ -78,3 +78,21 @@ def test_desactivar_ruta_conserva_centros_y_permite_reponerla(red):
 def test_desactivar_ruta_inexistente(red):
     with pytest.raises(GraphError):
         red.disable_arc("B", "A")
+
+
+def test_cambia_solo_la_capacidad_elegida(red):
+    red.add_arc("B", "C", 4)
+    red.set_capacity("A", "B", 9)
+    assert red.arcs == {("A", "B"): 9, ("B", "C"): 4}
+
+
+@pytest.mark.parametrize("capacidad", [0, 13])
+def test_cambio_invalido_conserva_capacidad_anterior(red, capacidad):
+    with pytest.raises(GraphError):
+        red.set_capacity("A", "B", capacidad)
+    assert red.arcs["A", "B"] == 5
+
+
+def test_cambiar_capacidad_de_ruta_inexistente(red):
+    with pytest.raises(GraphError):
+        red.set_capacity("A", "C", 3)
