@@ -170,3 +170,13 @@ def test_variante_2_amplia_solo_la_llegada_desde_g():
     esperadas["G", "T"] = 6
     assert build_variant_2().arcs == esperadas
     assert original.arcs["G", "T"] == 4
+
+
+def test_caso_manual_coincide_con_las_capacidades_del_calculo():
+    from src.examples import build_manual_case
+    red = build_manual_case()
+    assert red.vertices == {"O", "A", "B", "C", "T"}
+    assert red.arcs == {
+        ("O", "A"): 8, ("O", "B"): 6, ("A", "C"): 3,
+        ("B", "C"): 2, ("C", "T"): 8,
+    }
