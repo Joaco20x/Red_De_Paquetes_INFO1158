@@ -35,3 +35,11 @@ def build_variant_1() -> Graph:
     # Cerrar G → T deja a H → T como única entrada, de 4 paquetes por hora.
     red.disable_arc("G", "T")
     return red
+
+
+def build_variant_2() -> Graph:
+    """Devuelve una red nueva que amplía la capacidad de la llegada desde G."""
+    red = build_main_network()
+    # Toda la cadena superior admite 6; ampliar su último tramo libera 2 paquetes/h.
+    red.set_capacity("G", "T", 6)
+    return red
