@@ -43,3 +43,12 @@ def build_variant_2() -> Graph:
     # Toda la cadena superior admite 6; ampliar su último tramo libera 2 paquetes/h.
     red.set_capacity("G", "T", 6)
     return red
+
+
+def build_manual_case() -> Graph:
+    """Devuelve la red de cinco centros resuelta en docs/caso_manual.md."""
+    rutas = [
+        ("O", "A", 8), ("O", "B", 6),
+        ("A", "C", 3), ("B", "C", 2), ("C", "T", 8),
+    ]
+    return _build_network(("O", "A", "B", "C", "T"), rutas)
