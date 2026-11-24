@@ -161,3 +161,12 @@ def test_variante_1_quita_solo_la_llegada_desde_g():
     del esperadas["G", "T"]
     assert build_variant_1().arcs == esperadas
     assert ("G", "T") in original.arcs
+
+
+def test_variante_2_amplia_solo_la_llegada_desde_g():
+    from src.examples import build_main_network, build_variant_2
+    original = build_main_network()
+    esperadas = original.arcs.copy()
+    esperadas["G", "T"] = 6
+    assert build_variant_2().arcs == esperadas
+    assert original.arcs["G", "T"] == 4
