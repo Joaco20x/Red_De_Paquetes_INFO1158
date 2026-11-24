@@ -152,3 +152,12 @@ def test_red_principal_cumple_las_reglas_iniciales():
 def test_red_principal_admite_dos_caminos():
     from src.examples import SOURCE, SINK, build_main_network
     assert build_main_network().has_two_distinct_paths(SOURCE, SINK)
+
+
+def test_variante_1_quita_solo_la_llegada_desde_g():
+    from src.examples import build_main_network, build_variant_1
+    original = build_main_network()
+    esperadas = original.arcs.copy()
+    del esperadas["G", "T"]
+    assert build_variant_1().arcs == esperadas
+    assert ("G", "T") in original.arcs
