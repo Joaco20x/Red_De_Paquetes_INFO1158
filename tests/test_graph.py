@@ -96,3 +96,13 @@ def test_cambio_invalido_conserva_capacidad_anterior(red, capacidad):
 def test_cambiar_capacidad_de_ruta_inexistente(red):
     with pytest.raises(GraphError):
         red.set_capacity("A", "C", 3)
+
+
+def test_aislados_en_orden_alfabetico(red):
+    red.add_vertex("Z")
+    red.add_vertex("D")
+    assert red.isolated_vertices() == ["C", "D", "Z"]
+
+
+def test_red_vacia_no_tiene_aislados():
+    assert Graph().isolated_vertices() == []

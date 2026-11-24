@@ -49,3 +49,11 @@ class Graph:
             raise GraphError(f"La ruta {u} → {v} no existe.")
         self._validate_capacity(capacity)
         self.arcs[u, v] = capacity
+
+    def isolated_vertices(self) -> list[str]:
+        """Devuelve en orden alfabético los centros sin rutas de entrada ni de salida."""
+        conectados = set()
+        for origen, destino in self.arcs:
+            conectados.add(origen)
+            conectados.add(destino)
+        return sorted(self.vertices - conectados)
