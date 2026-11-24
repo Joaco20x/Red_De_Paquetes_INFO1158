@@ -1,6 +1,10 @@
 import pytest
 
 from src.core import GraphError
+from src.examples import (
+    SINK, SOURCE, build_figure1, build_main_network, build_manual_case,
+    build_variant_1, build_variant_2,
+)
 from src.graph import Graph
 
 
@@ -145,17 +149,14 @@ def test_extremos_invalidos_al_buscar_caminos(red, s, t):
 
 
 def test_red_principal_cumple_las_reglas_iniciales():
-    from src.examples import build_main_network
     assert build_main_network().validate_initial() == []
 
 
 def test_red_principal_admite_dos_caminos():
-    from src.examples import SOURCE, SINK, build_main_network
     assert build_main_network().has_two_distinct_paths(SOURCE, SINK)
 
 
 def test_variante_1_quita_solo_la_llegada_desde_g():
-    from src.examples import build_main_network, build_variant_1
     original = build_main_network()
     esperadas = original.arcs.copy()
     del esperadas["G", "T"]
@@ -164,7 +165,6 @@ def test_variante_1_quita_solo_la_llegada_desde_g():
 
 
 def test_variante_2_amplia_solo_la_llegada_desde_g():
-    from src.examples import build_main_network, build_variant_2
     original = build_main_network()
     esperadas = original.arcs.copy()
     esperadas["G", "T"] = 6
@@ -173,7 +173,6 @@ def test_variante_2_amplia_solo_la_llegada_desde_g():
 
 
 def test_caso_manual_coincide_con_las_capacidades_del_calculo():
-    from src.examples import build_manual_case
     red = build_manual_case()
     assert red.vertices == {"O", "A", "B", "C", "T"}
     assert red.arcs == {
@@ -183,7 +182,50 @@ def test_caso_manual_coincide_con_las_capacidades_del_calculo():
 
 
 def test_figura_1_tiene_seis_centros_y_siete_rutas():
-    from src.examples import build_figure1
     red = build_figure1()
     assert red.vertices == {"O", "A", "B", "C", "D", "T"}
     assert len(red.arcs) == 7
+
+
+def red_con_tamano(centros, rutas):
+    """Primero arma una cadena; luego agrega atajos hacia adelante."""
+    red = Graph()
+    nombres = [str(i) for i in range(centros)]
+    for nombre in nombres:
+        red.add_vertex(nombre)
+    for distancia in range(1, centros):
+        for inicio in range(centros - distancia):
+            if len(red.arcs) == rutas:
+                return red
+            red.add_arc(nombres[inicio], nombres[inicio + distancia], 1)
+    return red
+
+
+@pytest.mark.parametrize(("centros", "rutas"), [(10, 15), (12, 20)])
+def test_validacion_acepta_los_limites_inclusivos(centros, rutas):
+    assert red_con_tamano(centros, rutas).validate_initial() == []
+
+
+@pytest.mark.parametrize(("centros", "rutas", "regla"), [
+    (9, 15, "vértices"), (13, 15, "vértices"),
+    (10, 14, "arcos"), (10, 21, "arcos"),
+])
+def test_validacion_identifica_la_unica_regla_incumplida(centros, rutas, regla):
+    errores = red_con_tamano(centros, rutas).validate_initial()
+    assert len(errores) == 1
+    assert regla in errores[0]
+
+
+def test_validacion_nombra_el_centro_aislado():
+    red = red_con_tamano(10, 15)
+    red.add_vertex("X")
+    assert red.validate_initial() == ["Vértices aislados: X"]
+
+
+def test_una_vuelta_por_un_ciclo_no_cuenta_como_segundo_camino():
+    red = Graph()
+    for centro in ("O", "A", "B", "C", "T"):
+        red.add_vertex(centro)
+    for u, v in [("O", "A"), ("A", "B"), ("B", "C"), ("C", "A"), ("A", "T")]:
+        red.add_arc(u, v, 1)
+    assert not red.has_two_distinct_paths("O", "T")
