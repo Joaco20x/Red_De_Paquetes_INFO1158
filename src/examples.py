@@ -27,3 +27,11 @@ def build_main_network() -> Graph:
     ]
     # Flujo máximo esperado: 8. Cada cadena admite 4 y a T solo entran 4 + 4.
     return _build_network(("O", "A", "B", "C", "D", "E", "F", "G", "H", "T"), rutas)
+
+
+def build_variant_1() -> Graph:
+    """Devuelve la red principal con una de las dos llegadas a T bloqueada."""
+    red = build_main_network()
+    # Cerrar G → T deja a H → T como única entrada, de 4 paquetes por hora.
+    red.disable_arc("G", "T")
+    return red
