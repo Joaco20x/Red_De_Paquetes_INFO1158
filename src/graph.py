@@ -36,3 +36,9 @@ class Graph:
             raise GraphError(f"Ya existe la ruta inversa {v} → {u}.")
         self._validate_capacity(capacity)
         self.arcs[u, v] = capacity
+
+    def disable_arc(self, u: str, v: str) -> None:
+        """Elimina la ruta u → v y conserva sus centros. Si falta, lanza GraphError."""
+        if (u, v) not in self.arcs:
+            raise GraphError(f"La ruta {u} → {v} no existe.")
+        del self.arcs[u, v]

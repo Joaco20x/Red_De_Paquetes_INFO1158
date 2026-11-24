@@ -65,3 +65,16 @@ def test_rechaza_capacidad_invalida_al_agregar(red, capacidad):
     with pytest.raises(GraphError, match="Capacidad"):
         red.add_arc("B", "C", capacidad)
     assert ("B", "C") not in red.arcs
+
+
+def test_desactivar_ruta_conserva_centros_y_permite_reponerla(red):
+    red.disable_arc("A", "B")
+    assert red.arcs == {}
+    assert red.vertices == {"A", "B", "C"}
+    red.add_arc("A", "B", 7)
+    assert red.arcs["A", "B"] == 7
+
+
+def test_desactivar_ruta_inexistente(red):
+    with pytest.raises(GraphError):
+        red.disable_arc("B", "A")
