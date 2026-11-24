@@ -180,3 +180,10 @@ def test_caso_manual_coincide_con_las_capacidades_del_calculo():
         ("O", "A"): 8, ("O", "B"): 6, ("A", "C"): 3,
         ("B", "C"): 2, ("C", "T"): 8,
     }
+
+
+def test_figura_1_tiene_seis_centros_y_siete_rutas():
+    from src.examples import build_figure1
+    red = build_figure1()
+    assert red.vertices == {"O", "A", "B", "C", "D", "T"}
+    assert len(red.arcs) == 7
