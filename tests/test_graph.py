@@ -106,3 +106,11 @@ def test_aislados_en_orden_alfabetico(red):
 
 def test_red_vacia_no_tiene_aislados():
     assert Graph().isolated_vertices() == []
+
+
+def test_validacion_informa_todos_los_problemas(red):
+    mensajes = red.validate_initial()
+    assert len(mensajes) == 3
+    assert any("vértices" in m for m in mensajes)
+    assert any("arcos" in m for m in mensajes)
+    assert any("aislados: C" in m for m in mensajes)

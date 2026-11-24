@@ -1,4 +1,7 @@
-from src.core import CAPACITY_MAX, CAPACITY_MIN, GraphError
+from src.core import (
+    ARCS_MAX, ARCS_MIN, CAPACITY_MAX, CAPACITY_MIN,
+    VERTICES_MAX, VERTICES_MIN, GraphError,
+)
 
 
 class Graph:
@@ -57,3 +60,15 @@ class Graph:
             conectados.add(origen)
             conectados.add(destino)
         return sorted(self.vertices - conectados)
+
+    def validate_initial(self) -> list[str]:
+        """Devuelve todos los errores de tamaño y aislamiento de la red inicial."""
+        errores = []
+        if not VERTICES_MIN <= len(self.vertices) <= VERTICES_MAX:
+            errores.append(f"Se requieren entre {VERTICES_MIN} y {VERTICES_MAX} vértices.")
+        if not ARCS_MIN <= len(self.arcs) <= ARCS_MAX:
+            errores.append(f"Se requieren entre {ARCS_MIN} y {ARCS_MAX} arcos.")
+        aislados = self.isolated_vertices()
+        if aislados:
+            errores.append("Vértices aislados: " + ", ".join(aislados))
+        return errores
