@@ -52,3 +52,14 @@ def build_manual_case() -> Graph:
         ("A", "C", 3), ("B", "C", 2), ("C", "T", 8),
     ]
     return _build_network(("O", "A", "B", "C", "T"), rutas)
+
+
+def build_figure1() -> Graph:
+    """Devuelve el ejemplo de seis centros de la issue I1-09."""
+    # Es un ejemplo ilustrativo de seis vértices. El flujo máximo esperado es 14.
+    rutas = [
+        ("O", "A", 8), ("O", "B", 6),
+        ("A", "C", 5), ("A", "D", 3), ("B", "D", 6),
+        ("C", "T", 5), ("D", "T", 9),
+    ]
+    return _build_network(("O", "A", "B", "C", "D", "T"), rutas)
