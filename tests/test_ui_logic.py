@@ -3,9 +3,12 @@
 import sys
 import types
 
+import pytest
+
 from conftest import make_graph
 from src import solver
-from src.core import CutResult, FlowResult
+from src.core import CAPACITY_MAX, CAPACITY_MIN, CutResult, FlowResult, GraphError
+from src.ui import logic
 
 ARCS = {("A", "B"): 5, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 6}
 
@@ -62,3 +65,24 @@ def test_solver_con_bandera_verdadera_delega_en_flow(monkeypatch):
     assert solver.run_solver(graph, "A", "D") is expected_flow
     assert solver.run_cut(graph, expected_flow, "A", "D") is expected_cut
     assert calls == [("max_flow", "A", "D"), ("min_cut", "A", "D")]
+
+
+# ---------- I3-02 · parse_capacity ----------
+
+@pytest.mark.parametrize("text, expected", [("7", 7), (" 7 ", 7), ("1", 1), ("12", 12)])
+def test_parse_capacity_acepta_enteros_en_rango(text, expected):
+    assert logic.parse_capacity(text) == expected
+
+
+@pytest.mark.parametrize("text", ["0", "13", "-2"])
+def test_parse_capacity_fuera_de_rango_menciona_el_rango(text):
+    with pytest.raises(GraphError) as error:
+        logic.parse_capacity(text)
+
+    assert f"{CAPACITY_MIN} y {CAPACITY_MAX}" in str(error.value)
+
+
+@pytest.mark.parametrize("text", ["3.5", "abc", "", "   "])
+def test_parse_capacity_no_entero_pide_un_entero(text):
+    with pytest.raises(GraphError, match="entero"):
+        logic.parse_capacity(text)
