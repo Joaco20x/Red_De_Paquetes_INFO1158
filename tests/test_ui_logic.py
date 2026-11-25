@@ -6,7 +6,7 @@ import types
 import pytest
 
 from conftest import make_graph
-from src import solver
+from src import compare, solver
 from src.core import CAPACITY_MAX, CAPACITY_MIN, CutResult, FlowResult, GraphError
 from src.ui import logic
 
@@ -222,3 +222,42 @@ def test_app_empieza_con_la_red_principal_y_sin_resultados():
         assert app.title() == app_module.WINDOW_TITLE
     finally:
         app.destroy()
+
+
+# ---------- I3-17 · snapshot ----------
+
+FLOW_RESULT = FlowResult(value=7, flow={("A", "B"): 4, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 3})
+CUT_RESULT = CutResult(S={"A", "C"}, T={"B", "D"}, cut_arcs=[("A", "B"), ("C", "D")], capacity=11)
+
+
+def test_snapshot_tiene_exactamente_las_cuatro_claves():
+    saved = compare.snapshot("Base", make_graph(ARCS), FLOW_RESULT, CUT_RESULT)
+
+    assert set(saved) == {"name", "graph", "result", "cut"}
+    assert saved["name"] == "Base"
+
+
+def test_snapshot_no_cambia_al_modificar_el_grafo_original():
+    graph = make_graph(ARCS)
+    saved = compare.snapshot("Base", graph, FLOW_RESULT, CUT_RESULT)
+
+    del graph.arcs[("A", "C")]  # equivale a disable_arc sin depender de graph.py
+    graph.vertices.add("Z")
+
+    assert saved["graph"] is not graph
+    assert saved["graph"].arcs == ARCS
+    assert "Z" not in saved["graph"].vertices
+
+
+def test_snapshot_no_cambia_al_modificar_el_resultado_original():
+    result = FlowResult(value=7, flow=dict(FLOW_RESULT.flow))
+    cut = CutResult(S={"A"}, T={"B", "C", "D"}, cut_arcs=[("A", "B")], capacity=5)
+    saved = compare.snapshot("Base", make_graph(ARCS), result, cut)
+
+    result.flow[("A", "B")] = 0
+    cut.S.add("B")
+    cut.cut_arcs.append(("A", "C"))
+
+    assert saved["result"].flow[("A", "B")] == 4
+    assert saved["cut"].S == {"A"}
+    assert saved["cut"].cut_arcs == [("A", "B")]
