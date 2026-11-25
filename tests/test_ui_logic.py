@@ -1,7 +1,9 @@
 """Pruebas de la lógica de interfaz y comparación, sin abrir ventanas."""
 
+import ast
 import sys
 import types
+from pathlib import Path
 
 import pytest
 
@@ -205,25 +207,6 @@ def test_check_cut_matches_resultados_vacios():
     assert "coincide" in text
 
 
-# ---------- I3-07 · App ----------
-
-def test_app_empieza_con_la_red_principal_y_sin_resultados():
-    app_module = pytest.importorskip("src.ui.app")
-    try:
-        app = app_module.App()
-    except app_module.tk.TclError:
-        pytest.skip("No hay pantalla disponible para tkinter.")
-    try:
-        app.withdraw()  # la prueba no necesita mostrar la ventana
-        assert isinstance(app.graph, app_module.Graph)
-        assert app.graph.vertices
-        assert app.last_result is None
-        assert app.last_cut is None
-        assert app.title() == app_module.WINDOW_TITLE
-    finally:
-        app.destroy()
-
-
 # ---------- I3-17 · snapshot ----------
 
 FLOW_RESULT = FlowResult(value=7, flow={("A", "B"): 4, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 3})
@@ -295,3 +278,19 @@ def test_format_arc_y_parse_arc_son_inversas():
 def test_parse_arc_rechaza_textos_sin_origen_y_destino(text):
     with pytest.raises(GraphError):
         logic.parse_arc(text)
+
+
+# ---------- I3-20 · este archivo no abre ventanas ----------
+
+def test_este_archivo_no_importa_tkinter_ni_la_ventana():
+    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    imported = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported.add(node.module or "")
+            imported.update(f"{node.module}.{alias.name}" for alias in node.names)
+
+    assert not any(name.split(".")[0] == "tkinter" for name in imported)
+    assert not any(name.startswith(("src.ui.app", "src.flow", "src.examples")) for name in imported)
