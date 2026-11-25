@@ -145,3 +145,35 @@ def test_compute_positions_un_vertice_va_al_centro():
 
 def test_compute_positions_conjunto_vacio():
     assert logic.compute_positions(set(), 800, 600) == {}
+
+
+# ---------- I3-05 · build_result_rows ----------
+
+def test_build_result_rows_una_fila_por_arco_en_orden_alfabetico():
+    graph = make_graph({("C", "D"): 6, ("A", "C"): 3, ("B", "D"): 4, ("A", "B"): 5})
+    result = FlowResult(value=7, flow={("A", "B"): 4, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 3})
+
+    rows = logic.build_result_rows(graph, result)
+
+    assert len(rows) == len(graph.arcs)
+    assert [row["arc"] for row in rows] == ["A → B", "A → C", "B → D", "C → D"]
+    assert rows[0] == {"arc": "A → B", "flow": 4, "capacity": 5}
+
+
+def test_build_result_rows_arco_sin_flujo_muestra_cero():
+    graph = make_graph(ARCS)
+
+    rows = logic.build_result_rows(graph, FlowResult(value=0, flow={}))
+
+    assert all(row["flow"] == 0 for row in rows)
+
+
+def test_build_result_rows_ignora_arcos_desactivados():
+    graph = make_graph(ARCS)
+    result = FlowResult(value=7, flow={("A", "B"): 4, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 3})
+    del graph.arcs[("A", "C")]
+
+    rows = logic.build_result_rows(graph, result)
+
+    assert "A → C" not in [row["arc"] for row in rows]
+    assert len(rows) == 3
