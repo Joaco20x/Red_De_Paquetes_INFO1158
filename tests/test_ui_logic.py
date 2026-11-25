@@ -203,3 +203,22 @@ def test_check_cut_matches_resultados_vacios():
     text = logic.check_cut_matches(FlowResult(0, {}), CutResult(set(), set(), [], 0))
 
     assert "coincide" in text
+
+
+# ---------- I3-07 · App ----------
+
+def test_app_empieza_con_la_red_principal_y_sin_resultados():
+    app_module = pytest.importorskip("src.ui.app")
+    try:
+        app = app_module.App()
+    except app_module.tk.TclError:
+        pytest.skip("No hay pantalla disponible para tkinter.")
+    try:
+        app.withdraw()  # la prueba no necesita mostrar la ventana
+        assert isinstance(app.graph, app_module.Graph)
+        assert app.graph.vertices
+        assert app.last_result is None
+        assert app.last_cut is None
+        assert app.title() == app_module.WINDOW_TITLE
+    finally:
+        app.destroy()
