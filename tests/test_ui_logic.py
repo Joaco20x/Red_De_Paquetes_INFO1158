@@ -1,11 +1,16 @@
 """Pruebas de la lógica de interfaz y comparación, sin abrir ventanas."""
 
+import ast
 import sys
 import types
+from pathlib import Path
+
+import pytest
 
 from conftest import make_graph
-from src import solver
-from src.core import CutResult, FlowResult
+from src import compare, solver
+from src.core import CAPACITY_MAX, CAPACITY_MIN, CutResult, FlowResult, GraphError
+from src.ui import logic
 
 ARCS = {("A", "B"): 5, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 6}
 
@@ -62,3 +67,230 @@ def test_solver_con_bandera_verdadera_delega_en_flow(monkeypatch):
     assert solver.run_solver(graph, "A", "D") is expected_flow
     assert solver.run_cut(graph, expected_flow, "A", "D") is expected_cut
     assert calls == [("max_flow", "A", "D"), ("min_cut", "A", "D")]
+
+
+# ---------- I3-02 · parse_capacity ----------
+
+@pytest.mark.parametrize("text, expected", [("7", 7), (" 7 ", 7), ("1", 1), ("12", 12)])
+def test_parse_capacity_acepta_enteros_en_rango(text, expected):
+    assert logic.parse_capacity(text) == expected
+
+
+@pytest.mark.parametrize("text", ["0", "13", "-2"])
+def test_parse_capacity_fuera_de_rango_menciona_el_rango(text):
+    with pytest.raises(GraphError) as error:
+        logic.parse_capacity(text)
+
+    assert f"{CAPACITY_MIN} y {CAPACITY_MAX}" in str(error.value)
+
+
+@pytest.mark.parametrize("text", ["3.5", "abc", "", "   "])
+def test_parse_capacity_no_entero_pide_un_entero(text):
+    with pytest.raises(GraphError, match="entero"):
+        logic.parse_capacity(text)
+
+
+# ---------- I3-03 · validate_selection ----------
+
+VERTICES = {"A", "B", "C", "D"}
+
+
+def test_validate_selection_valida_devuelve_none():
+    assert logic.validate_selection("A", "D", VERTICES) is None
+
+
+@pytest.mark.parametrize("s, t, fragment", [
+    (None, "D", "origen"),
+    ("", "D", "origen"),
+    ("A", None, "destino"),
+    ("A", "", "destino"),
+    ("X", "D", "'X'"),
+    ("A", "Z", "'Z'"),
+    ("A", "A", "distintos"),
+])
+def test_validate_selection_cada_regla_tiene_su_mensaje(s, t, fragment):
+    assert fragment in logic.validate_selection(s, t, VERTICES)
+
+
+def test_validate_selection_sin_origen_ni_destino_reporta_el_origen():
+    assert "origen" in logic.validate_selection(None, None, VERTICES)
+
+
+# ---------- I3-04 · compute_positions ----------
+
+TWELVE = {f"V{i:02d}" for i in range(12)}
+
+
+@pytest.mark.parametrize("width, height", [(800, 600), (600, 800), (300, 300)])
+def test_compute_positions_quedan_dentro_del_canvas_con_margen(width, height):
+    positions = logic.compute_positions(TWELVE, width, height)
+
+    assert set(positions) == TWELVE
+    for x, y in positions.values():
+        assert 20 <= x <= width - 20
+        assert 20 <= y <= height - 20
+
+
+def test_compute_positions_es_determinista():
+    assert logic.compute_positions(TWELVE, 800, 600) == logic.compute_positions(set(TWELVE), 800, 600)
+
+
+def test_compute_positions_no_repite_coordenadas():
+    positions = logic.compute_positions(TWELVE, 800, 600)
+
+    assert len(set(positions.values())) == len(TWELVE)
+
+
+def test_compute_positions_un_vertice_va_al_centro():
+    assert logic.compute_positions({"A"}, 800, 600) == {"A": (400, 300)}
+
+
+def test_compute_positions_conjunto_vacio():
+    assert logic.compute_positions(set(), 800, 600) == {}
+
+
+# ---------- I3-05 · build_result_rows ----------
+
+def test_build_result_rows_una_fila_por_arco_en_orden_alfabetico():
+    graph = make_graph({("C", "D"): 6, ("A", "C"): 3, ("B", "D"): 4, ("A", "B"): 5})
+    result = FlowResult(value=7, flow={("A", "B"): 4, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 3})
+
+    rows = logic.build_result_rows(graph, result)
+
+    assert len(rows) == len(graph.arcs)
+    assert [row["arc"] for row in rows] == ["A → B", "A → C", "B → D", "C → D"]
+    assert rows[0] == {"arc": "A → B", "flow": 4, "capacity": 5}
+
+
+def test_build_result_rows_arco_sin_flujo_muestra_cero():
+    graph = make_graph(ARCS)
+
+    rows = logic.build_result_rows(graph, FlowResult(value=0, flow={}))
+
+    assert all(row["flow"] == 0 for row in rows)
+
+
+def test_build_result_rows_ignora_arcos_desactivados():
+    graph = make_graph(ARCS)
+    result = FlowResult(value=7, flow={("A", "B"): 4, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 3})
+    del graph.arcs[("A", "C")]
+
+    rows = logic.build_result_rows(graph, result)
+
+    assert "A → C" not in [row["arc"] for row in rows]
+    assert len(rows) == 3
+
+
+# ---------- I3-06 · check_cut_matches ----------
+
+def test_check_cut_matches_valores_iguales():
+    cut = CutResult(S={"A"}, T={"B", "C", "D"}, cut_arcs=[("A", "B"), ("A", "C")], capacity=8)
+
+    text = logic.check_cut_matches(FlowResult(value=8, flow={}), cut)
+
+    assert "coincide" in text
+    assert "8" in text
+
+
+def test_check_cut_matches_valores_distintos():
+    cut = CutResult(S={"A"}, T={"B"}, cut_arcs=[("A", "B")], capacity=9)
+
+    text = logic.check_cut_matches(FlowResult(value=7, flow={}), cut)
+
+    assert "discrepancia" in text
+    assert "7" in text and "9" in text
+
+
+def test_check_cut_matches_resultados_vacios():
+    text = logic.check_cut_matches(FlowResult(0, {}), CutResult(set(), set(), [], 0))
+
+    assert "coincide" in text
+
+
+# ---------- I3-17 · snapshot ----------
+
+FLOW_RESULT = FlowResult(value=7, flow={("A", "B"): 4, ("A", "C"): 3, ("B", "D"): 4, ("C", "D"): 3})
+CUT_RESULT = CutResult(S={"A", "C"}, T={"B", "D"}, cut_arcs=[("A", "B"), ("C", "D")], capacity=11)
+
+
+def test_snapshot_tiene_exactamente_las_cuatro_claves():
+    saved = compare.snapshot("Base", make_graph(ARCS), FLOW_RESULT, CUT_RESULT)
+
+    assert set(saved) == {"name", "graph", "result", "cut"}
+    assert saved["name"] == "Base"
+
+
+def test_snapshot_no_cambia_al_modificar_el_grafo_original():
+    graph = make_graph(ARCS)
+    saved = compare.snapshot("Base", graph, FLOW_RESULT, CUT_RESULT)
+
+    del graph.arcs[("A", "C")]  # equivale a disable_arc sin depender de graph.py
+    graph.vertices.add("Z")
+
+    assert saved["graph"] is not graph
+    assert saved["graph"].arcs == ARCS
+    assert "Z" not in saved["graph"].vertices
+
+
+def test_snapshot_no_cambia_al_modificar_el_resultado_original():
+    result = FlowResult(value=7, flow=dict(FLOW_RESULT.flow))
+    cut = CutResult(S={"A"}, T={"B", "C", "D"}, cut_arcs=[("A", "B")], capacity=5)
+    saved = compare.snapshot("Base", make_graph(ARCS), result, cut)
+
+    result.flow[("A", "B")] = 0
+    cut.S.add("B")
+    cut.cut_arcs.append(("A", "C"))
+
+    assert saved["result"].flow[("A", "B")] == 4
+    assert saved["cut"].S == {"A"}
+    assert saved["cut"].cut_arcs == [("A", "B")]
+
+
+# ---------- I3-18 · compare_configurations ----------
+
+def test_compare_configurations_una_fila_por_snapshot_en_orden():
+    smaller = make_graph({("A", "B"): 5, ("B", "D"): 4})
+    snapshots = [
+        compare.snapshot("Base", make_graph(ARCS), FLOW_RESULT, CUT_RESULT),
+        compare.snapshot("Variante 1", smaller, FlowResult(4, {}), CutResult({"A", "B"}, {"D"}, [("B", "D")], 4)),
+    ]
+
+    rows = compare.compare_configurations(snapshots)
+
+    assert rows == [
+        {"name": "Base", "num_arcs": 4, "max_flow": 7, "min_cut_capacity": 11},
+        {"name": "Variante 1", "num_arcs": 2, "max_flow": 4, "min_cut_capacity": 4},
+    ]
+
+
+def test_compare_configurations_lista_vacia():
+    assert compare.compare_configurations([]) == []
+
+
+# ---------- format_arc y parse_arc (usados por los formularios) ----------
+
+def test_format_arc_y_parse_arc_son_inversas():
+    assert logic.format_arc("A", "C") == "A → C"
+    assert logic.parse_arc("A → C") == ("A", "C")
+
+
+@pytest.mark.parametrize("text", ["", "A", "A → ", "A → B → C"])
+def test_parse_arc_rechaza_textos_sin_origen_y_destino(text):
+    with pytest.raises(GraphError):
+        logic.parse_arc(text)
+
+
+# ---------- I3-20 · este archivo no abre ventanas ----------
+
+def test_este_archivo_no_importa_tkinter_ni_la_ventana():
+    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    imported = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported.add(node.module or "")
+            imported.update(f"{node.module}.{alias.name}" for alias in node.names)
+
+    assert not any(name.split(".")[0] == "tkinter" for name in imported)
+    assert not any(name.startswith(("src.ui.app", "src.flow", "src.examples")) for name in imported)
