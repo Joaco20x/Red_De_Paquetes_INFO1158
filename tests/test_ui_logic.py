@@ -282,3 +282,16 @@ def test_compare_configurations_una_fila_por_snapshot_en_orden():
 
 def test_compare_configurations_lista_vacia():
     assert compare.compare_configurations([]) == []
+
+
+# ---------- format_arc y parse_arc (usados por los formularios) ----------
+
+def test_format_arc_y_parse_arc_son_inversas():
+    assert logic.format_arc("A", "C") == "A → C"
+    assert logic.parse_arc("A → C") == ("A", "C")
+
+
+@pytest.mark.parametrize("text", ["", "A", "A → ", "A → B → C"])
+def test_parse_arc_rechaza_textos_sin_origen_y_destino(text):
+    with pytest.raises(GraphError):
+        logic.parse_arc(text)

@@ -7,6 +7,21 @@ from src.core import CAPACITY_MAX, CAPACITY_MIN, CutResult, FlowResult, GraphErr
 from src.graph import Graph
 
 _INTEGER = re.compile(r"-?\d+", re.ASCII)
+ARC_SEPARATOR = " → "  # separa origen y destino en el texto que muestra la interfaz
+
+
+def format_arc(u: str, v: str) -> str:
+    """Devuelve el texto de la ruta u → v tal como se muestra en tablas y listas."""
+    return f"{u}{ARC_SEPARATOR}{v}"
+
+
+def parse_arc(text: str) -> tuple[str, str]:
+    """Convierte un texto como "A → C" en el arco ("A", "C").
+    Lanza GraphError si el texto no tiene exactamente un origen y un destino."""
+    parts = text.split(ARC_SEPARATOR)
+    if len(parts) != 2 or not all(part.strip() for part in parts):
+        raise GraphError("Selecciona una ruta de la lista.")
+    return parts[0].strip(), parts[1].strip()
 
 
 def parse_capacity(text: str) -> int:
@@ -58,7 +73,7 @@ def build_result_rows(graph: Graph, result: FlowResult) -> list[dict]:
     """Arma una fila {"arc", "flow", "capacity"} por cada arco activo del grafo,
     en orden alfabético por el texto del arco. Un arco sin flujo en result muestra 0."""
     rows = [
-        {"arc": f"{u} → {v}", "flow": result.flow.get((u, v), 0), "capacity": capacity}
+        {"arc": format_arc(u, v), "flow": result.flow.get((u, v), 0), "capacity": capacity}
         for (u, v), capacity in graph.arcs.items()
     ]
     return sorted(rows, key=lambda row: row["arc"])
