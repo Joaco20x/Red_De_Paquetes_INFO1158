@@ -261,3 +261,24 @@ def test_snapshot_no_cambia_al_modificar_el_resultado_original():
     assert saved["result"].flow[("A", "B")] == 4
     assert saved["cut"].S == {"A"}
     assert saved["cut"].cut_arcs == [("A", "B")]
+
+
+# ---------- I3-18 · compare_configurations ----------
+
+def test_compare_configurations_una_fila_por_snapshot_en_orden():
+    smaller = make_graph({("A", "B"): 5, ("B", "D"): 4})
+    snapshots = [
+        compare.snapshot("Base", make_graph(ARCS), FLOW_RESULT, CUT_RESULT),
+        compare.snapshot("Variante 1", smaller, FlowResult(4, {}), CutResult({"A", "B"}, {"D"}, [("B", "D")], 4)),
+    ]
+
+    rows = compare.compare_configurations(snapshots)
+
+    assert rows == [
+        {"name": "Base", "num_arcs": 4, "max_flow": 7, "min_cut_capacity": 11},
+        {"name": "Variante 1", "num_arcs": 2, "max_flow": 4, "min_cut_capacity": 4},
+    ]
+
+
+def test_compare_configurations_lista_vacia():
+    assert compare.compare_configurations([]) == []
