@@ -34,3 +34,21 @@ def validate_selection(s: str | None, t: str | None, vertices: set[str]) -> str 
     if s == t:
         return "El origen y el destino deben ser centros distintos."
     return None
+
+
+POSITION_MARGIN = 40  # píxeles entre el círculo de vértices y el borde del canvas
+
+
+def compute_positions(vertices: set[str], width: int, height: int) -> dict[str, tuple[int, int]]:
+    """Ubica los vértices en un círculo, en orden alfabético y partiendo desde arriba.
+    El resultado es siempre el mismo para los mismos datos."""
+    cx, cy = width / 2, height / 2
+    ordered = sorted(vertices)
+    if len(ordered) == 1:
+        return {ordered[0]: (round(cx), round(cy))}
+    radius = min(cx, cy) - POSITION_MARGIN
+    positions = {}
+    for i, vertex in enumerate(ordered):
+        angle = -math.pi / 2 + 2 * math.pi * i / len(ordered)
+        positions[vertex] = (round(cx + radius * math.cos(angle)), round(cy + radius * math.sin(angle)))
+    return positions

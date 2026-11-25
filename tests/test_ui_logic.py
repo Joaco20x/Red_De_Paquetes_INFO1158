@@ -112,3 +112,36 @@ def test_validate_selection_cada_regla_tiene_su_mensaje(s, t, fragment):
 
 def test_validate_selection_sin_origen_ni_destino_reporta_el_origen():
     assert "origen" in logic.validate_selection(None, None, VERTICES)
+
+
+# ---------- I3-04 · compute_positions ----------
+
+TWELVE = {f"V{i:02d}" for i in range(12)}
+
+
+@pytest.mark.parametrize("width, height", [(800, 600), (600, 800), (300, 300)])
+def test_compute_positions_quedan_dentro_del_canvas_con_margen(width, height):
+    positions = logic.compute_positions(TWELVE, width, height)
+
+    assert set(positions) == TWELVE
+    for x, y in positions.values():
+        assert 20 <= x <= width - 20
+        assert 20 <= y <= height - 20
+
+
+def test_compute_positions_es_determinista():
+    assert logic.compute_positions(TWELVE, 800, 600) == logic.compute_positions(set(TWELVE), 800, 600)
+
+
+def test_compute_positions_no_repite_coordenadas():
+    positions = logic.compute_positions(TWELVE, 800, 600)
+
+    assert len(set(positions.values())) == len(TWELVE)
+
+
+def test_compute_positions_un_vertice_va_al_centro():
+    assert logic.compute_positions({"A"}, 800, 600) == {"A": (400, 300)}
+
+
+def test_compute_positions_conjunto_vacio():
+    assert logic.compute_positions(set(), 800, 600) == {}
