@@ -62,3 +62,12 @@ def build_result_rows(graph: Graph, result: FlowResult) -> list[dict]:
         for (u, v), capacity in graph.arcs.items()
     ]
     return sorted(rows, key=lambda row: row["arc"])
+
+
+def check_cut_matches(result: FlowResult, cut: CutResult) -> str:
+    """Texto que confirma que la capacidad del corte mínimo es igual al flujo máximo
+    (apartado 3 del enunciado), o que avisa de la discrepancia con ambos valores."""
+    if cut.capacity == result.value:
+        return f"El flujo máximo y el corte mínimo coinciden: {result.value} paquetes/hora."
+    return (f"Hay una discrepancia: flujo máximo {result.value} paquetes/hora, "
+            f"capacidad del corte mínimo {cut.capacity} paquetes/hora.")

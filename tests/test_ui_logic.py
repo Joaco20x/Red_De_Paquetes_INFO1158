@@ -177,3 +177,29 @@ def test_build_result_rows_ignora_arcos_desactivados():
 
     assert "A → C" not in [row["arc"] for row in rows]
     assert len(rows) == 3
+
+
+# ---------- I3-06 · check_cut_matches ----------
+
+def test_check_cut_matches_valores_iguales():
+    cut = CutResult(S={"A"}, T={"B", "C", "D"}, cut_arcs=[("A", "B"), ("A", "C")], capacity=8)
+
+    text = logic.check_cut_matches(FlowResult(value=8, flow={}), cut)
+
+    assert "coincide" in text
+    assert "8" in text
+
+
+def test_check_cut_matches_valores_distintos():
+    cut = CutResult(S={"A"}, T={"B"}, cut_arcs=[("A", "B")], capacity=9)
+
+    text = logic.check_cut_matches(FlowResult(value=7, flow={}), cut)
+
+    assert "discrepancia" in text
+    assert "7" in text and "9" in text
+
+
+def test_check_cut_matches_resultados_vacios():
+    text = logic.check_cut_matches(FlowResult(0, {}), CutResult(set(), set(), [], 0))
+
+    assert "coincide" in text
