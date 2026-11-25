@@ -19,3 +19,18 @@ def parse_capacity(text: str) -> int:
     if not CAPACITY_MIN <= capacity <= CAPACITY_MAX:
         raise GraphError(f"La capacidad debe estar entre {CAPACITY_MIN} y {CAPACITY_MAX}.")
     return capacity
+
+
+def validate_selection(s: str | None, t: str | None, vertices: set[str]) -> str | None:
+    """Devuelve None si el origen y el destino son válidos, o un mensaje con el problema.
+    Revisa en orden: falta origen, falta destino, vértice inexistente, origen igual a destino."""
+    if not s:
+        return "Falta seleccionar el centro de origen."
+    if not t:
+        return "Falta seleccionar el centro de destino."
+    for vertex in (s, t):
+        if vertex not in vertices:
+            return f"El centro '{vertex}' no existe en la red."
+    if s == t:
+        return "El origen y el destino deben ser centros distintos."
+    return None

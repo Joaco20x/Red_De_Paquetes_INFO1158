@@ -86,3 +86,29 @@ def test_parse_capacity_fuera_de_rango_menciona_el_rango(text):
 def test_parse_capacity_no_entero_pide_un_entero(text):
     with pytest.raises(GraphError, match="entero"):
         logic.parse_capacity(text)
+
+
+# ---------- I3-03 · validate_selection ----------
+
+VERTICES = {"A", "B", "C", "D"}
+
+
+def test_validate_selection_valida_devuelve_none():
+    assert logic.validate_selection("A", "D", VERTICES) is None
+
+
+@pytest.mark.parametrize("s, t, fragment", [
+    (None, "D", "origen"),
+    ("", "D", "origen"),
+    ("A", None, "destino"),
+    ("A", "", "destino"),
+    ("X", "D", "'X'"),
+    ("A", "Z", "'Z'"),
+    ("A", "A", "distintos"),
+])
+def test_validate_selection_cada_regla_tiene_su_mensaje(s, t, fragment):
+    assert fragment in logic.validate_selection(s, t, VERTICES)
+
+
+def test_validate_selection_sin_origen_ni_destino_reporta_el_origen():
+    assert "origen" in logic.validate_selection(None, None, VERTICES)
