@@ -1,5 +1,2 @@
-# Pruebas automatizadas (integrantes 1, 2 y 3)
+# Pruebas automatizadas
 pytest==8.3.3
-
-# Tipado estático opcional, para revisar las anotaciones del contrato
-mypy==1.11.2
