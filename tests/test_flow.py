@@ -7,19 +7,10 @@ Los valores esperados de los fixtures están calculados a mano y documentados
 en sus comentarios, no se obtienen ejecutando el propio algoritmo.
 """
 
-from pathlib import Path
-import sys
-
 import pytest
 
-# ``src/flow.py`` usa imports planos (``import core``, ``from cola import ...``),
-# por lo que el directorio ``src`` debe estar en sys.path para poder importarlo.
-SRC_DIR = Path(__file__).resolve().parents[1] / "src"
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
-
-import core  # noqa: E402
-import flow  # noqa: E402
+from src import core
+from src import flow
 
 
 # ---------------------------------------------------------------------------
@@ -33,8 +24,10 @@ def make_graph(arcs: dict[tuple[str, str], int], extra_vertices=()) -> flow.Grap
     Se asignan los atributos directamente para no depender de ``examples.py``
     ni de los métodos de construcción del integrante 1.
     """
-    vertices = {v for arc in arcs for v in arc} | set(extra_vertices)
-    return flow.Graph(vertices=vertices, arcs=dict(arcs))
+    graph = flow.Graph()
+    graph.arcs = dict(arcs)
+    graph.vertices = {v for arc in arcs for v in arc} | set(extra_vertices)
+    return graph
 
 
 @pytest.fixture

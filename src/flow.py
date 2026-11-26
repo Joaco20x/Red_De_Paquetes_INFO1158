@@ -1,132 +1,167 @@
-from asyncio import graph
-from dataclasses import dataclass
-from operator import truediv
-import core
-from cola import ColaArreglo
-@dataclass
-class FlowResult:
-    value: int
-    flow: dict[tuple[int, str], int]
+"""Funciones de flujo máximo y corte mínimo sobre ``Graph``.
+
+Implementa Edmonds–Karp: Ford–Fulkerson con búsqueda en anchura.
+"""
+
+from src.cola import ColaArreglo
+from src.core import (
+    Arc,
+    CutResult,
+    Flow,
+    FlowResult,
+    GraphError,
+    VERTICES_MAX,
+)
+from src.graph import Graph
 
 
-@dataclass
-class CutResult:
-    S: set[str] #origen
-    T: set[str] #destino
-    cut_arcs: list[core.Arc]
-    capacity:int
+def build_residual(graph: Graph, flow: Flow) -> dict[Arc, int]:
+    """Devuelve la red residual de ``graph`` para el flujo ``flow``.
 
-def build_residual(graph:Graph, flow:core.Flow) -> dict[core.Arc, int]:
-    residual= {}
-    for arc in graph.arcs:
-        c= graph.arcs.get(arc)
-        f= flow.get(arc,0)
-        if c - f > 0:
-            residual[arc] = c - f
-        if f > 0:
-            residual[tuple(reversed(arc))] = f
+    Incluye solo arcos con capacidad residual estrictamente positiva.
+    No lanza excepciones.
+    """
+    residual: dict[Arc, int] = {}
+    for arc, capacity in graph.arcs.items():
+        sent = flow.get(arc, 0)
+        if capacity - sent > 0:
+            residual[arc] = capacity - sent
+        if sent > 0:
+            inverse = (arc[1], arc[0])
+            residual[inverse] = sent
     return residual
 
-def bfs_augmenting_path(residual, s, t) -> list | None :
-    cola= ColaArreglo(MAX_ELEM=core.VERTICES_MAX)
+
+def bfs_augmenting_path(
+    residual: dict[Arc, int], s: str, t: str
+) -> list[Arc] | None:
+    """Devuelve un camino aumentante de ``s`` a ``t`` con el menor número de arcos.
+
+    Usa búsqueda en anchura sobre la red residual. Devuelve ``None`` si ``t``
+    no es alcanzable. No lanza excepciones.
+    """
+    cola = ColaArreglo(MAX_ELEM=VERTICES_MAX)
     cola.encolar(s)
-    visitados= {} #visto : como llegue
-    visitados[s]=None
+    visitados: dict[str, Arc | None] = {s: None}
+
     while not cola.estaVacia():
-        x = cola.sacar()
-        if x== t:
+        actual = cola.sacar()
+        if actual == t:
             break
         for arc in residual:
-            if arc[0] == x and arc[1] not in visitados:
+            if arc[0] == actual and arc[1] not in visitados:
                 cola.encolar(arc[1])
-                visitados[arc[1]]=arc
-    recorrido= []
+                visitados[arc[1]] = arc
+
     if t not in visitados:
         return None
-    while visitados[t]:
-        recorrido.append(visitados[t])
-        t = visitados[t][0]
-    recorrido= list(reversed(recorrido))
-    return recorrido
 
-def bottleneck(residual , path) -> int:
-    aux = []
-    if path == [] :
-       raise core.GraphError
-    for v in path:
-        if v in residual:
-            aux.append(residual[v])
+    camino: list[Arc] = []
+    actual = t
+    while visitados[actual] is not None:
+        arc = visitados[actual]
+        camino.append(arc)
+        actual = arc[0]
+    camino.reverse()
+    return camino
+
+
+def bottleneck(residual: dict[Arc, int], path: list[Arc]) -> int:
+    """Devuelve el mínimo de las capacidades residuales del camino.
+
+    Lanza ``GraphError`` si ``path`` está vacío o contiene un arco que no
+    pertenece a la red residual.
+    """
+    if not path:
+        raise GraphError("El camino aumentante no puede estar vacío")
+
+    capacidades: list[int] = []
+    for arc in path:
+        if arc not in residual:
+            raise GraphError(f"El arco {arc} no está en la red residual")
+        capacidades.append(residual[arc])
+    return min(capacidades)
+
+
+def augment(graph: Graph, flow: Flow, path: list[Arc], delta: int) -> None:
+    """Aplica un aumento de ``delta`` unidades a lo largo de ``path``.
+
+    Suma en arcos directos y resta en arcos inversos. Modifica ``flow`` en el
+    lugar. Lanza ``GraphError`` si un arco no pertenece a la red original ni
+    es el inverso de uno existente.
+    """
+    for arc in path:
+        inverse = (arc[1], arc[0])
+        if arc in graph.arcs:
+            flow[arc] = flow.get(arc, 0) + delta
+        elif inverse in graph.arcs:
+            flow[inverse] = flow.get(inverse, 0) - delta
         else:
-            raise core.GraphError(f"arco {v} no está en la residual")
-    return min(aux)
+            raise GraphError(f"El arco {arc} no pertenece a la red")
 
-def augment(graph: Graph, flow: core.Flow, path, delta) -> None:
-    for p in path:
-        invert=tuple(reversed(p))
-        if p in graph.arcs:
-            flow[p] =flow.get(p,0) + delta
-        elif invert in graph.arcs:
-            flow[invert] = flow.get(invert,0) - delta
-        else:
-            raise core.GraphError
 
-def edmonds_karp(graph, s, t) -> FlowResult:
+def edmonds_karp(graph: Graph, s: str, t: str) -> FlowResult:
+    """Calcula el flujo máximo de ``s`` a ``t`` con Edmonds–Karp.
+
+    Lanza ``GraphError`` si ``s`` o ``t`` no existen en el grafo, o si
+    ``s == t``.
+    """
     if s == t or s not in graph.vertices or t not in graph.vertices:
-        raise core.GraphError(f"Vertices de entrada {s} o {t} invalidos")
-    flow={clave: 0 for clave in graph.arcs}
+        raise GraphError(f"Vértices de entrada {s!r} o {t!r} inválidos")
+
+    flow: Flow = {arc: 0 for arc in graph.arcs}
     while True:
-        residual = build_residual(graph,flow)
-        camino = bfs_augmenting_path(residual, s , t)
-        if camino == None:
+        residual = build_residual(graph, flow)
+        camino = bfs_augmenting_path(residual, s, t)
+        if camino is None:
             break
-        cuello= bottleneck(residual,camino)
-        augment(graph,flow,camino,cuello)
-    value = 0
-    for e in flow:
-        if s in e:
-            if e[0] == s:
-                value += flow[e]
-            if e[1] == s:
-                value -= flow[e]
-    return FlowResult(
-        value = value,
-        flow = flow
-    )
+        delta = bottleneck(residual, camino)
+        augment(graph, flow, camino, delta)
+
+    value = sum(sent for (u, _), sent in flow.items() if u == s)
+    value -= sum(sent for (_, v), sent in flow.items() if v == s)
+    return FlowResult(value=value, flow=flow)
+
 
 def max_flow(graph: Graph, s: str, t: str) -> FlowResult:
-    if isinstance(graph,Graph):
-        flow = edmonds_karp(graph,s,t)
-        return flow
-    else:
-        raise core.GraphError
-        def reachable_from_source(residual, s):
-            visitados = {s}
-            cola = ColaArreglo(MAX_ELEM=core.VERTICES_MAX)
-            cola.encolar(s)
-            while not cola.estaVacia():
-                x = cola.sacar()
-                for (u, v) in residual:
-                    if u == x and v not in visitados:
-                        visitados.add(v)
-                        cola.encolar(v)
-            return visitados
+    """Función pública de flujo máximo.
 
-def reachable_from_source(residual, s):
+    Valida que ``graph`` sea un ``Graph`` y delega en ``edmonds_karp``.
+    Lanza ``GraphError`` para entradas inválidas.
+    """
+    if not isinstance(graph, Graph):
+        raise GraphError("graph debe ser una instancia de Graph")
+    return edmonds_karp(graph, s, t)
+
+
+def reachable_from_source(residual: dict[Arc, int], s: str) -> set[str]:
+    """Devuelve los vértices alcanzables desde ``s`` por arcos residuales.
+
+    El conjunto siempre incluye a ``s``. No lanza excepciones.
+    """
     visitados = {s}
-    cola = ColaArreglo(MAX_ELEM=core.VERTICES_MAX)
+    cola = ColaArreglo(MAX_ELEM=VERTICES_MAX)
     cola.encolar(s)
+
     while not cola.estaVacia():
-        x = cola.sacar()
+        actual = cola.sacar()
         for (u, v) in residual:
-            if u == x and v not in visitados:
+            if u == actual and v not in visitados:
                 visitados.add(v)
                 cola.encolar(v)
     return visitados
-def validate_flow(graph, result, s, t):
-    errores = []
+
+
+def validate_flow(graph: Graph, result: FlowResult, s: str, t: str) -> list[str]:
+    """Verifica capacidad, conservación y valor de un flujo cualquiera.
+
+    Es independiente de cómo se calculó el flujo. Devuelve un mensaje por cada
+    violación; una lista vacía significa que el flujo es válido. No lanza
+    excepciones.
+    """
+    errores: list[str] = []
     flow = result.flow
 
-    # 1. Capacidad: 0 <= flujo <= capacidad en cada arco
     for arc, cap in graph.arcs.items():
         f = flow.get(arc, 0)
         if f < 0:
@@ -134,7 +169,6 @@ def validate_flow(graph, result, s, t):
         if f > cap:
             errores.append(f"flujo {f} supera capacidad {cap} en {arc}")
 
-    # 2. Conservación en vértices distintos de s y t
     for v in graph.vertices:
         if v in (s, t):
             continue
@@ -143,21 +177,24 @@ def validate_flow(graph, result, s, t):
         if entra != sale:
             errores.append(f"conservación rota en {v}: entra {entra}, sale {sale}")
 
-    # 3. Valor: neto que sale de s
-    neto = 0
-    for arc in graph.arcs:
-        f = flow.get(arc, 0)
-        if arc[0] == s:
-            neto += f
-        if arc[1] == s:
-            neto -= f
+    neto = sum(flow.get(arc, 0) for arc in graph.arcs if arc[0] == s)
+    neto -= sum(flow.get(arc, 0) for arc in graph.arcs if arc[1] == s)
     if neto != result.value:
         errores.append(f"valor declarado {result.value} distinto del neto {neto}")
 
     return errores
 
 
-def min_cut(graph, result, s, t):
+def min_cut(graph: Graph, result: FlowResult, s: str, t: str) -> CutResult:
+    """Construye el corte mínimo asociado al flujo ``result``.
+
+    Usa el teorema de flujo máximo–corte mínimo: ``S`` son los vértices
+    alcanzables desde ``s`` en la red residual. Lanza ``GraphError`` si ``s``
+    o ``t`` no existen, o si ``s == t``.
+    """
+    if s == t or s not in graph.vertices or t not in graph.vertices:
+        raise GraphError(f"Vértices de entrada {s!r} o {t!r} inválidos")
+
     residual = build_residual(graph, result.flow)
     S = reachable_from_source(residual, s)
     T = set(graph.vertices) - S
