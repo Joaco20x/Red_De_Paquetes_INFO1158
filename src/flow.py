@@ -65,9 +65,20 @@ def bottleneck(residual , path) -> int:
             raise core.GraphError(f"arco {v} no está en la residual")
     return min(aux)
 
+def augment(graph: Graph, flow: core.Flow, path, delta) -> None:
+    for p in path:
+        invert=tuple(reversed(p))
+        if p in graph.arcs:
+            flow[p] =flow.get(p,0) + delta
+        elif invert in graph.arcs:
+            flow[invert] = flow.get(invert,0) - delta
+        else:
+            raise core.GraphError
 
 
+grafo = Graph(arcs={("s","a"): 1, ("a","b"): 1, ("b","t"): 1, ("s","b"): 1, ("a","t"): 1}, vertices=["a","b","s","t"])
 
+""""""""""
 residual= {("s","a"): 1, ("a","t"): 1, ("s","b"): 1, ("b","c"): 1, ("c","t"): 1}
 residual2= {("s","a"): 1, ("b","t"): 1}
 residual3= {("s","b"): 1, ("b","a"): 1, ("a","t"): 1}
@@ -76,3 +87,14 @@ print(bfs_augmenting_path(residual,"s","t"))
 print(bfs_augmenting_path(residual2,"s","t"))
 print(bfs_augmenting_path(residual3,"s","t"))
 print(bfs_augmenting_path(residual4,"s","t"))
+"""
+
+flow1= {("s","a"): 1, ("a","b"): 1, ("b","t"): 1}
+camino1= [("s","b"), ("b","a"), ("a","t")]
+augment(grafo,flow1,camino1,1)
+print(flow1)
+
+flow2= {}
+camino2= [("s","a"), ("a","t")]
+augment(grafo,flow2,camino2,2)
+print(flow2)
