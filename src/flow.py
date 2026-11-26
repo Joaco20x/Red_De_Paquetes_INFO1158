@@ -4,7 +4,7 @@ from operator import truediv
 import core
 from cola import ColaArreglo
 #arc= aristas
-class make_graph:#Clase de grafo para hacer pruebas (borrar al terminar issues)
+class Graph:#Clase de grafo para hacer pruebas (borrar al terminar issues)
     def __init__(self,vertices,arcs) -> None:
         self.vertices= vertices
         self.arcs= arcs
@@ -97,3 +97,10 @@ def edmonds_karp(graph, s, t) -> FlowResult:
         value = value,
         flow = flow
     )
+
+def max_flow(graph: Graph, s: str, t: str) -> FlowResult:
+    if isinstance(graph,Graph):
+        flow = edmonds_karp(graph,s,t)
+        return flow
+    else:
+        raise core.GraphError
