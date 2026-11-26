@@ -4,7 +4,7 @@ from operator import truediv
 import core
 from cola import ColaArreglo
 #arc= aristas
-class Graph:#Clase de grafo para hacer pruebas (borrar al terminar issues)
+class make_graph:#Clase de grafo para hacer pruebas (borrar al terminar issues)
     def __init__(self,vertices,arcs) -> None:
         self.vertices= vertices
         self.arcs= arcs
@@ -75,26 +75,25 @@ def augment(graph: Graph, flow: core.Flow, path, delta) -> None:
         else:
             raise core.GraphError
 
-
-grafo = Graph(arcs={("s","a"): 1, ("a","b"): 1, ("b","t"): 1, ("s","b"): 1, ("a","t"): 1}, vertices=["a","b","s","t"])
-
-""""""""""
-residual= {("s","a"): 1, ("a","t"): 1, ("s","b"): 1, ("b","c"): 1, ("c","t"): 1}
-residual2= {("s","a"): 1, ("b","t"): 1}
-residual3= {("s","b"): 1, ("b","a"): 1, ("a","t"): 1}
-residual4 ={("s","a"): 1, ("b","a"): 1}
-print(bfs_augmenting_path(residual,"s","t"))
-print(bfs_augmenting_path(residual2,"s","t"))
-print(bfs_augmenting_path(residual3,"s","t"))
-print(bfs_augmenting_path(residual4,"s","t"))
-"""
-
-flow1= {("s","a"): 1, ("a","b"): 1, ("b","t"): 1}
-camino1= [("s","b"), ("b","a"), ("a","t")]
-augment(grafo,flow1,camino1,1)
-print(flow1)
-
-flow2= {}
-camino2= [("s","a"), ("a","t")]
-augment(grafo,flow2,camino2,2)
-print(flow2)
+def edmonds_karp(graph, s, t) -> FlowResult:
+    if s == t or s not in graph.vertices or t not in graph.vertices:
+        raise core.GraphError(f"Vertices de entrada {s} o {t} invalidos")
+    flow={clave: 0 for clave in graph.arcs}
+    while True:
+        residual = build_residual(graph,flow)
+        camino = bfs_augmenting_path(residual, s , t)
+        if camino == None:
+            break
+        cuello= bottleneck(residual,camino)
+        augment(graph,flow,camino,cuello)
+    value = 0
+    for e in flow:
+        if s in e:
+            if e[0] == s:
+                value += flow[e]
+            if e[1] == s:
+                value -= flow[e]
+    return FlowResult(
+        value = value,
+        flow = flow
+    )
