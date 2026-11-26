@@ -3,7 +3,7 @@
 from src.core import CutResult, FlowResult
 from src.graph import Graph
 
-USE_REAL_SOLVER: bool = False
+USE_REAL_SOLVER: bool = True
 
 
 def run_solver(graph: Graph, s: str, t: str) -> FlowResult:
